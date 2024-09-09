@@ -4,8 +4,14 @@
 #include <string>
 #include <cstdio>
 #include <filesystem>
-#include <thread>
-#include <chrono>
+
+#if defined(_WIN32)
+    #include <windows.h>
+    #include <strsafe.h>
+#else
+    #include <unistd.h>
+    #include <libgen.h>
+#endif
 
 namespace updater {
 
@@ -22,91 +28,64 @@ namespace updater {
         bool execute(const std::string& command, const std::string& mode = "r");
     }
 
-    /*
-        Gets the release information from github of the given tag.
-
-        Parameters:
-        `url`: URL to the github repository.
-        `tag`: The tag name to get.
-
-        Notes:
-        - Gets the latest release if no tag is specified.
-    */
-    inline nlohmann::json getRelease(const std::string& url, const std::string& tag = "")
+    inline std::string sourcePath(bool parent_path = true) 
     {
-        std::string output;
+        std::filesystem::path source_path;
+        #if defined(_WIN32)
+            char path[MAX_PATH];
+            GetModuleFileName(NULL, path, MAX_PATH);
+            source_path = path;
+        #elif defined(__linux__) || defined(__apple__)
+            source_path = std::filesystem::canonical("/proc/self/exe");
+        #else
+            throw std::runtime_error(_private::errorMessage(__func__, "Unknown Operating System"));
+        #endif
 
-        if(tag.empty()) {
-            _private_::execute("curl.exe -s " + url + "/releases/latest", output);
-        } else {
-            _private_::execute("curl.exe -s " + url + "/releases/tags/" + tag, output);
+        if(parent_path) {
+            return source_path.parent_path().string();
         }
 
-        return nlohmann::json::parse(output);
+        return source_path.string();
     }
 
-    inline std::string getLatestReleaseTag(const std::string& url)
-    {
-        std::string output;
-        _private_::execute("curl.exe -s " + url + "/releases/latest", output);
+    #if defined(_WIN32)
+        inline void removeSelf(std::string source_path = "")
+        {
+            std::string remove_cmd = "cmd.exe /C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del /f /q \"%s\"";
+            TCHAR szCmd[2 * MAX_PATH];
+            STARTUPINFO si = {0};
+            PROCESS_INFORMATION pi = {0};
 
-        return nlohmann::json::parse(output).at("tag_name");
-    }
+            if(source_path.empty()) {
+                source_path = sourcePath(false);
+            }
 
-    /*
-        Downloads an asset from a given repository and tag.
+            StringCbPrintf(szCmd, 2 * MAX_PATH, remove_cmd.c_str(), source_path.c_str());
 
-        Parameters:
-        `repo_url`: URL to the repo. (E.g. `https://github.com/{USER}/{REPO}.git`)
-        `tag`: Tag to download asset from.
-        `asset_name`: Name of the asset to download from the given tag.
-        `output_path`: Path to the output file. (Surround with quotations to avoid errors)
-    */
-    inline bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::string& output_path)
-    {
-        std::string download_url = repo_url + "/releases/download/" + tag + "/" + asset_name;
-        std::cout << download_url << std::endl;
-        return _private_::execute("curl.exe -s -L " + download_url + " -o " + output_path);
-    }
+            CreateProcess(NULL, szCmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
 
-    inline bool updateApp(const std::filesystem::path& original_app_path, const std::filesystem::path& new_app_path)
-    {
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-
-        std::string original_name = original_app_path.filename().string();
-        std::string new_name = new_app_path.filename().string();
-        std::filesystem::path renamed_original_path = original_app_path.parent_path() / std::filesystem::path("old_" + original_name);
-
-        std::filesystem::rename(original_app_path, renamed_original_path);
-        std::filesystem::rename(new_app_path, new_app_path.parent_path() / std::filesystem::path(original_name));
-
-        std::filesystem::remove_all(renamed_original_path);
-
-        return true;
-    }   
-
-    inline bool removeOldApp(const std::filesystem::path& source_path = "")
-    {
-        if(source_path.empty()) {
-            return false;
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
         }
+    #else
+        inline void removeSelf()
+        {
+            char szModuleName[1024];
+            ssize_t len = readlink("/proc/self/exe", szModuleName, sizeof(szModuleName) - 1);
 
-        std::string filename = source_path.filename().string();
+            if (len != -1) {
+                szModuleName[len] = '\0';
+                char* dir = dirname(szModuleName);
+                char command[2 * 1024];
 
-        std::filesystem::path old_app = std::filesystem::weakly_canonical(source_path / std::filesystem::path("old_" + filename));
-        if(!std::filesystem::exists(old_app)) {
-            return false;
+                snprintf(command, sizeof(command), "sleep 3 && rm -f \"%s\"", szModuleName);
+                if (fork() == 0) {
+                    execl("/bin/sh", "sh", "-c", command, (char *)NULL);
+                    exit(EXIT_SUCCESS);
+                }
+            }
         }
-
-        std::filesystem::remove_all(old_app);
-
-        return true;
-    }
-
-    bool isCurlInstalled()
-    {
-        return _private_::execute(curl_path + " -V");
-    }
+    #endif
 
     /*
         Cleans the url.
@@ -133,6 +112,85 @@ namespace updater {
     {
         std::string result = "https://api.github.com/repos/" + repo_url.substr(19, repo_url.size() - 19);
         return cleanUrl(result);
+    }
+
+    /*
+        Gets the release information from github of the given tag.
+
+        Parameters:
+        `repo_url`: URL to the github repository.
+        `tag`: The tag name to get.
+
+        Notes:
+        - Gets the latest release if no tag is specified.
+    */
+    inline nlohmann::json getReleaseJson(const std::string& repo_url, const std::string& tag = "")
+    {
+        std::string api_url = convertToAPIUrl(repo_url);
+        std::string output;
+
+        if(tag.empty()) {
+            _private_::execute(curl_path + " -s " + api_url + "/releases/latest", output);
+        } else {
+            _private_::execute(curl_path + " -s " + api_url + "/releases/tags/" + tag, output);
+        }
+
+        return nlohmann::json::parse(output);
+    }
+
+    inline std::string getLatestReleaseTag(const std::string& repo_url)
+    {
+        std::string api_url = convertToAPIUrl(repo_url);
+        std::string output;
+        _private_::execute(curl_path + " -s " + api_url + "/releases/latest", output);
+
+        return nlohmann::json::parse(output).at("tag_name");
+    }
+
+    /*
+        Downloads an asset from a given repository and tag.
+
+        Parameters:
+        `repo_url`: URL to the repo.
+        `tag`: Tag to download asset from.
+        `asset_name`: Name of the asset to download from the given tag.
+        `output_path`: Path to the output file. (Surround with quotations to avoid errors)
+    */
+    inline bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::filesystem::path& output_path)
+    {
+        std::string download_url = cleanUrl(repo_url) + "/releases/download/" + tag + "/" + asset_name;
+        return _private_::execute(curl_path + " -s -L " + download_url + " -o " + "\"" + output_path.string() + "\"");
+    }
+
+    inline bool updateApp(const std::string& repo_url, const std::string& tag, const std::string& asset_name)
+    {
+        nlohmann::json release_info = getReleaseJson(repo_url);
+        std::filesystem::path source_path = sourcePath(false);
+        std::filesystem::path source_temp = source_path.string() + "1";
+        std::filesystem::path new_source_path = source_path.string() + "2";
+
+        for(const auto& i : release_info.at("assets")) {
+            if(i.at("name") == asset_name) {
+                downloadAsset(repo_url, tag, asset_name, source_temp);
+                break;
+            }
+        }
+
+        if(!std::filesystem::exists(source_temp)) {
+            return false;
+        }
+
+        std::filesystem::rename(source_path, new_source_path);
+        std::filesystem::rename(source_temp, source_path);
+
+        // removeSelf(new_source_path);
+
+        return true;
+    }
+
+    inline bool isCurlInstalled()
+    {
+        return _private_::execute(curl_path + " -V");
     }
 
     namespace _private_ {

@@ -22,17 +22,15 @@ int main(int argc, char** argv)
 
     // Get update from url then place it in the caller path with a unique name.
     // Delete the caller executable then rename the new executable.
-
-    std::string latest_tag = updater::getLatestReleaseTag(updater::convertToAPIUrl(url));
-    std::string output = path::joinPath(path::sourcePath(), "updater.exe1");
-    std::cout << output << std::endl;
     
     // std::cout << updater::downloadAsset(updater::cleanUrl(url), 
     //                 "v1.0.1", "test_updater.exe",
     //                 "\"" + output + "\"");
 
     std::cout << updater::isCurlInstalled() << std::endl;
-    std::cout << updater::_private_::execute("jimmy") << std::endl;
+
+    // updater::updateApp(url, "", "test_updater.exe");
+    updater::removeSelf(path::sourcePath());
 
     return 0;
 }
