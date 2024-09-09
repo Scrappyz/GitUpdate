@@ -156,10 +156,10 @@ namespace updater {
         `asset_name`: Name of the asset to download from the given tag.
         `output_path`: Path to the output file. (Surround with quotations to avoid errors)
     */
-    inline bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::string& output_path)
+    inline bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::filesystem::path& output_path)
     {
         std::string download_url = cleanUrl(repo_url) + "/releases/download/" + tag + "/" + asset_name;
-        std::string command = curl_path + " -s -L " + download_url + " -o " + "\"" + output_path + "\"";
+        std::string command = curl_path + " -s -L " + download_url + " -o " + "\"" + output_path.string() + "\"";
         return _private_::execute(command);
     }
 
@@ -169,13 +169,13 @@ namespace updater {
         tag = release_info.at("tag_name");
         
         std::filesystem::path source_path = sourcePath(false);
-        std::filesystem::path source_parent_path = source_path.parent_path();
-        std::filesystem::path source_temp = source_parent_path / std::filesystem::path("temp_" + source_path.filename().string());
-        std::filesystem::path new_source_path = source_parent_path / std::filesystem::path("old_" + source_path.filename().string());
+        // std::filesystem::path source_parent_path = source_path.parent_path();
+        std::filesystem::path source_temp = source_path.string() + "1";
+        std::filesystem::path new_source_path = source_path.string() + "2";
 
         for(const auto& i : release_info.at("assets")) {
             if(i.at("name") == asset_name) {
-                downloadAsset(repo_url, tag, asset_name, source_temp.string());
+                downloadAsset(repo_url, tag, asset_name, source_temp);
                 break;
             }
         }
@@ -184,10 +184,10 @@ namespace updater {
             return false;
         }
 
-        // std::filesystem::rename(source_path, new_source_path);
-        // std::filesystem::rename(source_temp, source_path);
+        std::filesystem::rename(source_path, new_source_path);
+        std::filesystem::rename(source_temp, source_path);
 
-        // removeSelf(new_source_path.string());
+        removeSelf(new_source_path.string());
 
         return true;
     }
