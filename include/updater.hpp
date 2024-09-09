@@ -49,18 +49,19 @@ namespace updater {
     }
 
     #if defined(_WIN32)
-        inline void removeSelf(std::string source_path = "")
+        inline void removeSelf(const std::filesystem::path& source_path = "")
         {
-            std::string remove_cmd = "cmd.exe /C ping 1.1.1.1 -n 1 -w 3000 > Nul & Del /f /q \"%s\"";
+            std::string remove_cmd = "cmd.exe /C ping 1.1.1.1 -n 1 -w 2000 > Nul & Del /f /q \"%s\"";
             TCHAR szCmd[2 * MAX_PATH];
             STARTUPINFO si = {0};
             PROCESS_INFORMATION pi = {0};
 
-            if(source_path.empty()) {
-                source_path = sourcePath(false);
+            std::string source_path_str = source_path.string();
+            if(source_path_str.empty()) {
+                source_path_str = sourcePath(false);
             }
 
-            StringCbPrintf(szCmd, 2 * MAX_PATH, remove_cmd.c_str(), source_path.c_str());
+            StringCbPrintf(szCmd, 2 * MAX_PATH, remove_cmd.c_str(), source_path_str.c_str());
 
             CreateProcess(NULL, szCmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
 

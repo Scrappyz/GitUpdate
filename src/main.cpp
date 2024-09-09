@@ -29,7 +29,7 @@ int main(int argc, char** argv)
 
     std::cout << updater::isCurlInstalled() << std::endl;
 
-    updater::updateApp(url, "", "test_updater.exe");
+    updater::updateApp(url, "v1.0.0-beta.1", "test_updater.exe");
     // updater::removeSelf(path::sourcePath());
 
     return 0;
