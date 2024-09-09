@@ -1,0 +1,42 @@
+[
+  {
+    "name": "v1.0.1",
+    "zipball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/zipball/refs/tags/v1.0.1",
+    "tarball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/tarball/refs/tags/v1.0.1",
+    "commit": {
+      "sha": "79ece77436323ea0a25dada86b72d7b94d9aaa70",
+      "url": "https://api.github.com/repos/Scrappyz/Test-Updater/commits/79ece77436323ea0a25dada86b72d7b94d9aaa70"
+    },
+    "node_id": "REF_kwDOMuv3DrByZWZzL3RhZ3MvdjEuMC4x"
+  },
+  {
+    "name": "v1.0.0",
+    "zipball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/zipball/refs/tags/v1.0.0",
+    "tarball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/tarball/refs/tags/v1.0.0",
+    "commit": {
+      "sha": "c59fb8e7ecd0c03ebafb2f8a676b47c3ad51b794",
+      "url": "https://api.github.com/repos/Scrappyz/Test-Updater/commits/c59fb8e7ecd0c03ebafb2f8a676b47c3ad51b794"
+    },
+    "node_id": "REF_kwDOMuv3DrByZWZzL3RhZ3MvdjEuMC4w"
+  },
+  {
+    "name": "v1.0.0-beta.2",
+    "zipball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/zipball/refs/tags/v1.0.0-beta.2",
+    "tarball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/tarball/refs/tags/v1.0.0-beta.2",
+    "commit": {
+      "sha": "dce2cd6f2233ad38a9b8caf65a520d68e92eb11c",
+      "url": "https://api.github.com/repos/Scrappyz/Test-Updater/commits/dce2cd6f2233ad38a9b8caf65a520d68e92eb11c"
+    },
+    "node_id": "REF_kwDOMuv3DrdyZWZzL3RhZ3MvdjEuMC4wLWJldGEuMg"
+  },
+  {
+    "name": "v1.0.0-beta.1",
+    "zipball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/zipball/refs/tags/v1.0.0-beta.1",
+    "tarball_url": "https://api.github.com/repos/Scrappyz/Test-Updater/tarball/refs/tags/v1.0.0-beta.1",
+    "commit": {
+      "sha": "6dca7b2e63e9d72083fbe5db83f42c105dd1c4d7",
+      "url": "https://api.github.com/repos/Scrappyz/Test-Updater/commits/6dca7b2e63e9d72083fbe5db83f42c105dd1c4d7"
+    },
+    "node_id": "REF_kwDOMuv3DrdyZWZzL3RhZ3MvdjEuMC4wLWJldGEuMQ"
+  }
+]

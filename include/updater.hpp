@@ -161,7 +161,7 @@ namespace updater {
         Parameters:
         `repo_url`: URL to the github repository.
     */
-    inline nlohmann::json getTagsJson(const std::string& repo_url)
+    inline nlohmann::json getTagListJson(const std::string& repo_url)
     {
         std::string api_url = convertToAPIUrl(repo_url);
         std::string output;
