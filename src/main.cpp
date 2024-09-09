@@ -29,8 +29,8 @@ int main(int argc, char** argv)
 
     std::cout << updater::isCurlInstalled() << std::endl;
 
-    // updater::updateApp(url, "", "test_updater.exe");
-    updater::removeSelf(path::sourcePath());
+    updater::updateApp(url, "", "test_updater.exe");
+    // updater::removeSelf(path::sourcePath());
 
     return 0;
 }
