@@ -27,15 +27,12 @@ int main(int argc, char** argv)
     std::string output = path::joinPath(path::sourcePath(), "updater.exe1");
     std::cout << output << std::endl;
     
-    std::cout << updater::downloadAsset(updater::cleanUrl(url), 
-                    "v1.0.1", "test_updater.exe",
-                    "\"" + output + "\"");
+    // std::cout << updater::downloadAsset(updater::cleanUrl(url), 
+    //                 "v1.0.1", "test_updater.exe",
+    //                 "\"" + output + "\"");
 
-    updater::updateApp(path::sourcePath(false), output);
-
-    // Launch the updater thread just before exiting
-    // std::thread updater_thread(updater::updateApp, path::sourcePath(), output);
-    // updater_thread.detach();
+    std::cout << updater::isCurlInstalled() << std::endl;
+    std::cout << updater::_private_::execute("jimmy") << std::endl;
 
     return 0;
 }

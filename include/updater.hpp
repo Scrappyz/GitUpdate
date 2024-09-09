@@ -9,6 +9,14 @@
 
 namespace updater {
 
+    #if defined(_WIN32)
+        std::string curl_path = "curl.exe";
+    #elif defined(__linux__)
+        std::string curl_path = "curl";
+    #else
+        std::string curl_path = "";
+    #endif
+
     namespace _private_ {
         bool execute(const std::string& command, std::string& output, const std::string& mode = "r");
         bool execute(const std::string& command, const std::string& mode = "r");
@@ -93,6 +101,11 @@ namespace updater {
         std::filesystem::remove_all(old_app);
 
         return true;
+    }
+
+    bool isCurlInstalled()
+    {
+        return _private_::execute(curl_path + " -V");
     }
 
     /*
