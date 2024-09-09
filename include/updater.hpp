@@ -200,7 +200,13 @@ namespace updater {
     */
     inline void update(const std::string& repo_url, const std::string& tag, const std::string& asset_name)
     {
-        nlohmann::json release_info = getReleaseJson(repo_url, tag);
+        nlohmann::json release_info;
+
+        if(tag.empty()) {
+            release_info = getLatestReleaseJson(repo_url);
+        } else {
+            release_info = getReleaseJson(repo_url, tag);
+        }
         
         std::filesystem::path source_path = sourcePath(false);
         std::filesystem::path source_temp = source_path.string() + "1";
@@ -243,7 +249,7 @@ namespace updater {
     */
     inline bool isCurlInstalled()
     {
-        return _private_::execute(curl_path + " -V");
+        return _private_::execute(curl_path + " --help");
     }
 
     namespace _private_ {

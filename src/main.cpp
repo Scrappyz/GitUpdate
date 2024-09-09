@@ -13,6 +13,6 @@ int main(int argc, char** argv)
 
     std::cout << updater::isCurlInstalled() << std::endl;
 
-    updater::update(url, "v1.0.0-beta.1", "test_updater.exe");
+    updater::update(url, "test_updater.exe");
     return 0;
 }
