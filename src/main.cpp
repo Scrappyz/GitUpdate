@@ -25,7 +25,10 @@ int main(int argc, char** argv)
     // Get update from url then place it in the caller path with a unique name.
     // Delete the caller executable then rename the new executable.
 
-    std::cout << updater::downloadAsset(url, updater::getLatestReleaseTag(updater::parseUrl(url)), "cli.hpp", "cli.hpp");
+    std::string output = path::joinPath(path::sourcePath(), "cli.hpp");
+    std::cout << output << std::endl;
+    std::cout << updater::downloadAsset(url, updater::getLatestReleaseTag(updater::parseUrl(url)), "cli.hpp",
+                 "\"" + output + "\"");
 
     return 0;
 }

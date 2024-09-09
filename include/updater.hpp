@@ -36,9 +36,9 @@ namespace updater {
         return nlohmann::json::parse(output).at("tag_name");
     }
 
-    bool downloadAsset(const std::string& url, const std::string& tag, const std::string& asset_name, const std::string& output_path)
+    bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::string& output_path)
     {
-        std::string download_url = url + "/releases/download/" + tag + "/" + asset_name;
+        std::string download_url = repo_url + "/releases/download/" + tag + "/" + asset_name;
         std::cout << download_url << std::endl;
         return os::execute("curl.exe -s -L " + download_url + " -o " + output_path);
     }
