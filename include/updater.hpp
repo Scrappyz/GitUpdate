@@ -17,10 +17,8 @@ namespace updater {
 
     #if defined(_WIN32)
         std::string curl_path = "curl.exe";
-    #elif defined(__linux__)
-        std::string curl_path = "curl";
     #else
-        std::string curl_path = "";
+        std::string curl_path = "curl";
     #endif
 
     namespace _private_ {
@@ -49,6 +47,15 @@ namespace updater {
     }
 
     #if defined(_WIN32)
+        /*
+            Deletes the running executable.
+
+            Parameters:
+            `source_path`: Path to the running executable. (Defaults to running executable)
+
+            Notes:
+            - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
+        */
         inline void removeSelf(const std::filesystem::path& source_path = "")
         {
             std::string remove_cmd = "cmd.exe /C ping 1.1.1.1 -n 1 -w 2000 > Nul & Del /f /q \"%s\"";
@@ -121,31 +128,47 @@ namespace updater {
         Parameters:
         `repo_url`: URL to the github repository.
         `tag`: The tag name to get.
-
-        Notes:
-        - Gets the latest release if no tag is specified.
     */
-    inline nlohmann::json getReleaseJson(const std::string& repo_url, const std::string& tag = "")
+    inline nlohmann::json getReleaseJson(const std::string& repo_url, const std::string& tag)
     {
         std::string api_url = convertToAPIUrl(repo_url);
         std::string output;
 
-        if(tag.empty()) {
-            _private_::execute(curl_path + " -s " + api_url + "/releases/latest", output);
-        } else {
-            _private_::execute(curl_path + " -s " + api_url + "/releases/tags/" + tag, output);
-        }
+        _private_::execute(curl_path + " -s " + api_url + "/releases/tags/" + tag, output);
 
         return nlohmann::json::parse(output);
     }
 
-    inline std::string getLatestReleaseTag(const std::string& repo_url)
+    /*
+        Gets the latest release information from github.
+
+        Parameters:
+        `repo_url`: URL to the github repository.
+    */
+    inline nlohmann::json getLatestReleaseJson(const std::string& repo_url)
     {
         std::string api_url = convertToAPIUrl(repo_url);
         std::string output;
+
         _private_::execute(curl_path + " -s " + api_url + "/releases/latest", output);
 
-        return nlohmann::json::parse(output).at("tag_name");
+        return nlohmann::json::parse(output);
+    }
+
+    /*
+        Gets the list of tags.
+
+        Parameters:
+        `repo_url`: URL to the github repository.
+    */
+    inline nlohmann::json getTagsJson(const std::string& repo_url)
+    {
+        std::string api_url = convertToAPIUrl(repo_url);
+        std::string output;
+
+        _private_::execute(curl_path + " -s " + api_url + "/tags", output);
+
+        return nlohmann::json::parse(output);
     }
 
     /*
@@ -155,7 +178,7 @@ namespace updater {
         `repo_url`: URL to the repo.
         `tag`: Tag to download asset from.
         `asset_name`: Name of the asset to download from the given tag.
-        `output_path`: Path to the output file. (Surround with quotations to avoid errors)
+        `output_path`: Path to the output file.
     */
     inline bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::filesystem::path& output_path)
     {
@@ -164,35 +187,60 @@ namespace updater {
         return _private_::execute(command);
     }
 
-    inline bool updateApp(const std::string& repo_url, std::string tag, const std::string& asset_name)
+    /*
+        Updates the application by replacing the current app with the new one.
+
+        Parameters:
+        `repo_url`: URL to the github repo.
+        `tag`: Tag to update application to.
+        `asset_name`: The asset to download.
+
+        Notes:
+        - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
+    */
+    inline void update(const std::string& repo_url, const std::string& tag, const std::string& asset_name)
     {
         nlohmann::json release_info = getReleaseJson(repo_url, tag);
-        tag = release_info.at("tag_name");
         
         std::filesystem::path source_path = sourcePath(false);
-        // std::filesystem::path source_parent_path = source_path.parent_path();
         std::filesystem::path source_temp = source_path.string() + "1";
         std::filesystem::path new_source_path = source_path.string() + "2";
 
         for(const auto& i : release_info.at("assets")) {
             if(i.at("name") == asset_name) {
-                downloadAsset(repo_url, tag, asset_name, source_temp);
+                downloadAsset(repo_url, release_info.at("tag_name"), asset_name, source_temp);
                 break;
             }
         }
 
         if(!std::filesystem::exists(source_temp)) {
-            return false;
+            return;
         }
 
         std::filesystem::rename(source_path, new_source_path);
         std::filesystem::rename(source_temp, source_path);
 
-        removeSelf(new_source_path.string());
-
-        return true;
+        removeSelf(new_source_path);
     }
 
+    /*
+        Updates the application by replacing the current app with the new one.
+
+        Parameters:
+        `repo_url`: URL to the github repo.
+        `asset_name`: The asset to download.
+
+        Notes:
+        - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
+    */
+    inline void update(const std::string& repo_url, const std::string& asset_name)
+    {
+        update(repo_url, "", asset_name);
+    }
+
+    /*
+        Checks if cURL is installed.
+    */
     inline bool isCurlInstalled()
     {
         return _private_::execute(curl_path + " -V");
