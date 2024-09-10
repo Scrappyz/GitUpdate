@@ -109,21 +109,6 @@ namespace updater {
     #endif
 
     /*
-        Cleans the url.
-    */
-    inline std::string cleanUrl(const std::string& url)
-    {
-        std::string result = url;
-
-        std::string appended = result.substr(result.size() - 4, 4);
-        if(appended == ".git") {
-            for(int i = 0; i < 4; i++) result.pop_back();
-        }
-
-        return result;
-    }
-
-    /*
         Returns the github url of the given username and repo.
 
         Parameters:
@@ -140,12 +125,12 @@ namespace updater {
         Converts the given github repo url to an API url.
 
         Parameters:
-        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}.git`)
+        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}`)
     */
     inline std::string getAPIUrl(const std::string& repo_url)
     {
         std::string result = github_api_url + repo_url.substr(19, repo_url.size() - 19);
-        return cleanUrl(result);
+        return result;
     }
 
     /*
@@ -165,7 +150,7 @@ namespace updater {
         Gets the release information from github of the given tag.
 
         Parameters:
-        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}.git`)
+        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}`)
         `tag`: The tag name to get.
     */
     inline nlohmann::json getReleaseJson(const std::string& repo_url, const std::string& tag)
@@ -175,24 +160,10 @@ namespace updater {
     }
 
     /*
-        Gets the release information from github of the given tag.
-
-        Parameters:
-        `user_name`: Username of the owner of the repo.
-        `repo_name`: Name of the repo.
-        `tag`: The tag name to get.
-    */
-    inline nlohmann::json getReleaseJson(const std::string& user_name, const std::string& repo_name, const std::string& tag)
-    {
-        std::string api_url = getAPIUrl(user_name, repo_name);
-        return _private_::getReleaseJson(api_url, tag);
-    }
-
-    /*
         Gets the latest release information from github.
 
         Parameters:
-        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}.git`)
+        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}`)
         `pre_release`: Allow pre-releases.
     */
     inline nlohmann::json getLatestReleaseJson(const std::string& repo_url, bool pre_release = false)
@@ -202,24 +173,10 @@ namespace updater {
     }
 
     /*
-        Gets the latest release information from github.
-
-        Parameters:
-        `user_name`: Username of the owner of the repo.
-        `repo_name`: Name of the repo.
-        `pre_release`: Allow pre-releases.
-    */
-    inline nlohmann::json getLatestReleaseJson(const std::string& user_name, const std::string& repo_name, bool pre_release = false)
-    {
-        std::string api_url = getAPIUrl(user_name, repo_name);
-        return _private_::getLatestReleaseJson(api_url, pre_release);
-    }
-
-    /*
         Gets the list of tags.
 
         Parameters:
-        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}.git`)
+        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}`)
     */
     inline nlohmann::json getTagListJson(const std::string& repo_url)
     {
@@ -228,46 +185,17 @@ namespace updater {
     }
 
     /*
-        Gets the latest release information from github.
-
-        Parameters:
-        `user_name`: Username of the owner of the repo.
-        `repo_name`: Name of the repo.
-    */
-    inline nlohmann::json getTagListJson(const std::string& user_name, const std::string& repo_name)
-    {
-        std::string api_url = getAPIUrl(user_name, repo_name);
-        return _private_::getTagListJson(api_url);
-    }
-
-    /*
         Downloads an asset from a given repository and tag.
 
         Parameters:
-        `repo_url`: URL to the repo. (E.g. `https://github.com/{USER}/{REPO}.git`)
+        `repo_url`: URL to the repo. (E.g. `https://github.com/{USER}/{REPO}`)
         `tag`: Tag to download asset from.
         `asset_name`: Name of the asset to download from the given tag.
         `output_path`: Path to the output file.
     */
     inline bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::filesystem::path& output_path)
     {
-        std::string download_url = cleanUrl(repo_url) + "/releases/download/" + tag + "/" + asset_name;
-        return _private_::downloadAsset(download_url, output_path);
-    }
-
-    /*
-        Downloads an asset from a given repository and tag.
-
-        Parameters:
-        `user_name`: Username of the owner of the repo.
-        `repo_name`: Name of the repo.
-        `tag`: Tag to download asset from.
-        `asset_name`: Name of the asset to download from the given tag.
-        `output_path`: Path to the output file.
-    */
-    inline bool downloadAsset(const std::string& user_name, const std::string& repo_name, const std::string& tag, const std::string& asset_name, const std::filesystem::path& output_path)
-    {
-        std::string download_url = getUrl(user_name, repo_name) + "/releases/download/" + tag + "/" + asset_name;
+        std::string download_url = repo_url + "/releases/download/" + tag + "/" + asset_name;
         return _private_::downloadAsset(download_url, output_path);
     }
 
@@ -316,6 +244,14 @@ namespace updater {
     inline bool isCurlInstalled()
     {
         return _private_::execute(curl_path + " --help");
+    }
+
+    /*
+        Checks if the JSON request for the Github API was found.
+    */
+    inline bool isJsonFound(const nlohmann::json& j)
+    {
+        return !(j.contains("message") && j.at("message") == "Not Found");
     }
 
     namespace _private_ {
@@ -376,20 +312,34 @@ namespace updater {
 
             _private_::execute(curl_path + " -s " + api_url + "/releases/tags/" + tag, output);
 
-            return nlohmann::json::parse(output);
+            nlohmann::json result = nlohmann::json::parse(output);
+
+            if(isJsonFound(result)) {
+                return result;
+            }
+
+            return nlohmann::json();
         }
 
         inline nlohmann::json getLatestReleaseJson(const std::string& api_url, bool pre_release)
         {
             std::string output;
+            nlohmann::json result;
 
             if(!pre_release) {
                 _private_::execute(curl_path + " -s " + api_url + "/releases/latest", output);
-                return nlohmann::json::parse(output);
+                result = nlohmann::json::parse(output);
+            } else {
+                _private_::execute(curl_path + " -s " + api_url + "/releases", output);
+                result = nlohmann::json::parse(output)[0];
             }
 
-            _private_::execute(curl_path + " -s " + api_url + "/releases", output);
-            return nlohmann::json::parse(output)[0];
+            
+            if(isJsonFound(result)) {
+                return result;
+            }
+
+            return nlohmann::json();
         }
 
         inline nlohmann::json getTagListJson(const std::string& api_url)
@@ -398,7 +348,13 @@ namespace updater {
 
             _private_::execute(curl_path + " -s " + api_url + "/tags", output);
 
-            return nlohmann::json::parse(output);
+            nlohmann::json result = nlohmann::json::parse(output);
+
+            if(isJsonFound(result)) {
+                return result;
+            }
+
+            return nlohmann::json();
         }
 
         inline bool downloadAsset(const std::string& download_url, const std::filesystem::path& output_path)
