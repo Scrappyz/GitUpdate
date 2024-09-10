@@ -16,19 +16,26 @@
 namespace updater {
 
     #if defined(_WIN32)
+        // Path to cURL. (Defaults "curl.exe")
         inline std::string curl_path = "curl.exe";
     #else
+        // Path to cURL. (Defaults "curl")
         inline std::string curl_path = "curl";
     #endif
 
-    inline std::string github_url = "https://github.com/";
-    inline std::string github_api_url = "https://api.github.com/repos/";
+    // URL to Github.
+    inline const std::string github_url = "https://github.com/";
+
+    // URL to Github API.
+    inline const std::string github_api_url = "https://api.github.com/repos/";
 
     namespace _private_ {
         bool execute(const std::string& command, std::string& output, const std::string& mode = "r");
         bool execute(const std::string& command, const std::string& mode = "r");
         nlohmann::json getReleaseJson(const std::string& api_url, const std::string& tag);
         nlohmann::json getLatestReleaseJson(const std::string& api_url, bool pre_release = false);
+        nlohmann::json getTagListJson(const std::string& api_url);
+        bool downloadAsset(const std::string& download_url, const std::filesystem::path& output_path);
     }
 
     inline std::string sourcePath(bool parent_path = true) 
@@ -157,7 +164,7 @@ namespace updater {
         Gets the release information from github of the given tag.
 
         Parameters:
-        `repo_url`: URL to the github repository.
+        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}.git`)
         `tag`: The tag name to get.
     */
     inline nlohmann::json getReleaseJson(const std::string& repo_url, const std::string& tag)
@@ -172,6 +179,7 @@ namespace updater {
         Parameters:
         `user_name`: Username of the owner of the repo.
         `repo_name`: Name of the repo.
+        `tag`: The tag name to get.
     */
     inline nlohmann::json getReleaseJson(const std::string& user_name, const std::string& repo_name, const std::string& tag)
     {
@@ -183,7 +191,7 @@ namespace updater {
         Gets the latest release information from github.
 
         Parameters:
-        `repo_url`: URL to the github repository.
+        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}.git`)
         `pre_release`: Allow pre-releases.
     */
     inline nlohmann::json getLatestReleaseJson(const std::string& repo_url, bool pre_release = false)
@@ -210,23 +218,32 @@ namespace updater {
         Gets the list of tags.
 
         Parameters:
-        `repo_url`: URL to the github repository.
+        `repo_url`: URL to the github repository. (E.g. `https://github.com/{USER}/{REPO}.git`)
     */
     inline nlohmann::json getTagListJson(const std::string& repo_url)
     {
         std::string api_url = getAPIUrl(repo_url);
-        std::string output;
+        return _private_::getTagListJson(api_url);
+    }
 
-        _private_::execute(curl_path + " -s " + api_url + "/tags", output);
+    /*
+        Gets the latest release information from github.
 
-        return nlohmann::json::parse(output);
+        Parameters:
+        `user_name`: Username of the owner of the repo.
+        `repo_name`: Name of the repo.
+    */
+    inline nlohmann::json getTagListJson(const std::string& user_name, const std::string& repo_name)
+    {
+        std::string api_url = getAPIUrl(user_name, repo_name);
+        return _private_::getTagListJson(api_url);
     }
 
     /*
         Downloads an asset from a given repository and tag.
 
         Parameters:
-        `repo_url`: URL to the repo.
+        `repo_url`: URL to the repo. (E.g. `https://github.com/{USER}/{REPO}.git`)
         `tag`: Tag to download asset from.
         `asset_name`: Name of the asset to download from the given tag.
         `output_path`: Path to the output file.
@@ -234,8 +251,23 @@ namespace updater {
     inline bool downloadAsset(const std::string& repo_url, const std::string& tag, const std::string& asset_name, const std::filesystem::path& output_path)
     {
         std::string download_url = cleanUrl(repo_url) + "/releases/download/" + tag + "/" + asset_name;
-        std::string command = curl_path + " -s -L " + download_url + " -o " + "\"" + output_path.string() + "\"";
-        return _private_::execute(command);
+        return _private_::downloadAsset(download_url, output_path);
+    }
+
+    /*
+        Downloads an asset from a given repository and tag.
+
+        Parameters:
+        `user_name`: Username of the owner of the repo.
+        `repo_name`: Name of the repo.
+        `tag`: Tag to download asset from.
+        `asset_name`: Name of the asset to download from the given tag.
+        `output_path`: Path to the output file.
+    */
+    inline bool downloadAsset(const std::string& user_name, const std::string& repo_name, const std::string& tag, const std::string& asset_name, const std::filesystem::path& output_path)
+    {
+        std::string download_url = getUrl(user_name, repo_name) + "/releases/download/" + tag + "/" + asset_name;
+        return _private_::downloadAsset(download_url, output_path);
     }
 
     /*
@@ -249,7 +281,7 @@ namespace updater {
         Notes:
         - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
     */
-    inline void updateApp(const std::string& repo_url, const std::string& tag, const std::string& asset_name)
+    inline bool updateApp(const std::string& repo_url, const std::string& tag, const std::string& asset_name)
     {
         nlohmann::json release_info;
 
@@ -259,25 +291,7 @@ namespace updater {
             release_info = getReleaseJson(repo_url, tag);
         }
         
-        std::filesystem::path source_path = sourcePath(false);
-        std::filesystem::path source_temp = source_path.string() + "1";
-        std::filesystem::path new_source_path = source_path.string() + "2";
-
-        for(const auto& i : release_info.at("assets")) {
-            if(i.at("name") == asset_name) {
-                downloadAsset(repo_url, release_info.at("tag_name"), asset_name, source_temp);
-                break;
-            }
-        }
-
-        if(!std::filesystem::exists(source_temp)) {
-            return;
-        }
-
-        std::filesystem::rename(source_path, new_source_path);
-        std::filesystem::rename(source_temp, source_path);
-
-        removeSelf(new_source_path);
+        return _private_::updateApp(release_info, asset_name);
     }
 
     /*
@@ -290,11 +304,11 @@ namespace updater {
         Notes:
         - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
     */
-    inline void updateApp(const std::string& repo_url, const std::string& asset_name)
+    inline bool updateApp(const std::string& repo_url, const std::string& asset_name)
     {
-        updateApp(repo_url, "", asset_name);
+        return updateApp(repo_url, "", asset_name);
     }
-
+    
     /*
         Checks if cURL is installed.
     */
@@ -377,5 +391,44 @@ namespace updater {
             return nlohmann::json::parse(output)[0];
         }
 
+        inline nlohmann::json getTagListJson(const std::string& api_url)
+        {
+            std::string output;
+
+            _private_::execute(curl_path + " -s " + api_url + "/tags", output);
+
+            return nlohmann::json::parse(output);
+        }
+
+        inline bool downloadAsset(const std::string& download_url, const std::filesystem::path& output_path)
+        {
+            std::string command = curl_path + " -s -L " + download_url + " -o " + "\"" + output_path.string() + "\"";
+            return _private_::execute(command);
+        }
+
+        inline bool updateApp(const nlohmann::json& release_info, const std::string& asset_name)
+        {
+            std::filesystem::path source_path = sourcePath(false);
+            std::filesystem::path source_temp = source_path.string() + "1";
+            std::filesystem::path new_source_path = source_path.string() + "2";
+
+            for(const auto& i : release_info.at("assets")) {
+                if(i.at("name") == asset_name) {
+                    _private_::downloadAsset(i.at("browser_download_url"), source_temp);
+                    break;
+                }
+            }
+
+            if(!std::filesystem::exists(source_temp)) {
+                return false;
+            }
+
+            std::filesystem::rename(source_path, new_source_path);
+            std::filesystem::rename(source_temp, source_path);
+
+            removeSelf(new_source_path);
+
+            return true;
+        }
     }
 }
