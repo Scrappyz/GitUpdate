@@ -1,0 +1,15 @@
+*
+!.gitignore
+!.github/
+!.github/**
+!include/
+!include/**
+!src/
+!src/**
+!test/
+!test/**
+test/bin/
+test/bin/**
+!CHANGELOG.md
+!README.md
+!CMakeLists.txt
