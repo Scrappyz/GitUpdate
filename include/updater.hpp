@@ -207,6 +207,41 @@ namespace updater {
         Updates the application by replacing the current app with the new one.
 
         Parameters:
+        `release_info`: Information about the release in JSON format.
+        `asset_name`: The asset to download.
+
+        Notes:
+        - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
+    */
+    inline bool updateApp(const nlohmann::json& release_info, const std::string& asset_name)
+    {
+        std::filesystem::path source_path = sourcePath(false);
+        std::filesystem::path source_temp = source_path.string() + "1";
+        std::filesystem::path new_source_path = source_path.string() + "2";
+
+        for(const auto& i : release_info.at("assets")) {
+            if(i.at("name") == asset_name) {
+                _private_::downloadAsset(i.at("browser_download_url"), source_temp);
+                break;
+            }
+        }
+
+        if(!std::filesystem::exists(source_temp)) {
+            return false;
+        }
+
+        std::filesystem::rename(source_path, new_source_path);
+        std::filesystem::rename(source_temp, source_path);
+
+        removeSelf(new_source_path);
+
+        return true;
+    }
+
+    /*
+        Updates the application by replacing the current app with the new one.
+
+        Parameters:
         `repo_url`: URL to the github repo.
         `tag`: Tag to update application to.
         `asset_name`: The asset to download.
@@ -214,12 +249,12 @@ namespace updater {
         Notes:
         - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
     */
-    inline bool updateApp(const std::string& repo_url, const std::string& tag, const std::string& asset_name)
+    inline bool updateApp(const std::string& repo_url, const std::string& tag, const std::string& asset_name, bool pre_release = false)
     {
         nlohmann::json release_info;
 
         if(tag.empty()) {
-            release_info = getLatestReleaseJson(repo_url);
+            release_info = getLatestReleaseJson(repo_url, pre_release);
         } else {
             release_info = getReleaseJson(repo_url, tag);
         }
@@ -237,9 +272,9 @@ namespace updater {
         Notes:
         - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
     */
-    inline bool updateApp(const std::string& repo_url, const std::string& asset_name)
+    inline bool updateApp(const std::string& repo_url, const std::string& asset_name, bool pre_release = false)
     {
-        return updateApp(repo_url, "", asset_name);
+        return updateApp(repo_url, "", asset_name, pre_release);
     }
 
     /*
@@ -367,29 +402,5 @@ namespace updater {
             return _private_::execute(command);
         }
 
-        inline bool updateApp(const nlohmann::json& release_info, const std::string& asset_name)
-        {
-            std::filesystem::path source_path = sourcePath(false);
-            std::filesystem::path source_temp = source_path.string() + "1";
-            std::filesystem::path new_source_path = source_path.string() + "2";
-
-            for(const auto& i : release_info.at("assets")) {
-                if(i.at("name") == asset_name) {
-                    _private_::downloadAsset(i.at("browser_download_url"), source_temp);
-                    break;
-                }
-            }
-
-            if(!std::filesystem::exists(source_temp)) {
-                return false;
-            }
-
-            std::filesystem::rename(source_path, new_source_path);
-            std::filesystem::rename(source_temp, source_path);
-
-            removeSelf(new_source_path);
-
-            return true;
-        }
     }
 }
