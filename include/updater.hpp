@@ -89,21 +89,25 @@ namespace updater {
             CloseHandle(pi.hProcess);
         }
     #else
-        inline void removeSelf()
+        /*
+            Deletes the running executable.
+
+            Parameters:
+            `source_path`: Path to the running executable. (Defaults to running executable)
+
+            Notes:
+            - Only works if the program is terminated after 2 seconds so it would be best to run this right before program exit.
+        */
+        inline void removeSelf(const std::filesystem::path& source_path = "")
         {
-            char szModuleName[1024];
-            ssize_t len = readlink("/proc/self/exe", szModuleName, sizeof(szModuleName) - 1);
+            std::string path_to_remove = source_path.empty() ? sourcePath(false) : source_path.string();
+            char command[2 * 1024];
 
-            if (len != -1) {
-                szModuleName[len] = '\0';
-                char* dir = dirname(szModuleName);
-                char command[2 * 1024];
+            snprintf(command, sizeof(command), "sleep 3 && rm -f \"%s\"", path_to_remove.c_str());
 
-                snprintf(command, sizeof(command), "sleep 3 && rm -f \"%s\"", szModuleName);
-                if (fork() == 0) {
-                    execl("/bin/sh", "sh", "-c", command, (char *)NULL);
-                    exit(EXIT_SUCCESS);
-                }
+            if(fork() == 0) {
+                execl("/bin/sh", "sh", "-c", command, (char *)NULL);
+                exit(EXIT_SUCCESS);
             }
         }
     #endif
