@@ -36,7 +36,6 @@ namespace updater {
         nlohmann::json getLatestReleaseJson(const std::string& api_url, bool pre_release = false);
         nlohmann::json getTagListJson(const std::string& api_url);
         bool downloadAsset(const std::string& download_url, const std::filesystem::path& output_path);
-        bool updateApp(const nlohmann::json& release_info, const std::string& asset_name);
     }
 
     inline std::string sourcePath(bool parent_path = true) 
@@ -259,7 +258,7 @@ namespace updater {
             release_info = getReleaseJson(repo_url, tag);
         }
         
-        return _private_::updateApp(release_info, asset_name);
+        return updateApp(release_info, asset_name);
     }
 
     /*

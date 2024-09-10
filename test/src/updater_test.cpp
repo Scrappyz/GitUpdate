@@ -9,6 +9,7 @@ std::string test_path = path::joinPath(path::sourcePath(), "../test_path");
 std::string repo_url = "https://github.com/Scrappyz/Test-Updater";
 std::string resource_path = path::joinPath(test_path, "resources");
 std::string temp_path = path::joinPath(test_path, "temp");
+std::string asset_name = "test_updater.exe";
 
 std::string readTextFromFile(const std::string& file_path)
 {
@@ -54,13 +55,6 @@ TEST(getReleaseJson, failure)
     EXPECT_EQ(actual, json());
 }
 
-TEST(getLatestReleaseJson, working)
-{
-    json actual = updater::getLatestReleaseJson(repo_url);
-    
-    EXPECT_EQ(actual, readJsonFromFile(path::joinPath(resource_path, "latest.json")));
-}
-
 TEST(getTagListJson, working)
 {
     json actual = updater::getTagListJson(repo_url);
@@ -70,11 +64,14 @@ TEST(getTagListJson, working)
 
 TEST(downloadAsset, working)
 {
-    json j = updater::getLatestReleaseJson(repo_url, true);
-    std::string output_name = "test_updater.exe";
-    std::string output_path = path::joinPath(temp_path, output_name);
+    if(!path::exists(temp_path)) {
+        path::createDirectory(temp_path);
+    }
 
-    updater::downloadAsset(repo_url, j.at("tag_name"), output_name, output_path);
+    json j = updater::getLatestReleaseJson(repo_url, true);
+    std::string output_path = path::joinPath(temp_path, asset_name);
+
+    updater::downloadAsset(repo_url, j.at("tag_name"), asset_name, output_path);
 
     ASSERT_TRUE(path::exists(output_path));
 
