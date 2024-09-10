@@ -21,12 +21,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 # Add the unit testing target executable
 file(GLOB Sources ${CMAKE_CURRENT_SOURCE_DIR}/../src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 list(REMOVE_ITEM Sources ${CMAKE_CURRENT_SOURCE_DIR}/../src/main.cpp)
-add_executable(updater_test ${Sources})
-target_include_directories(updater_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
-target_link_libraries(updater_test PUBLIC gtest_main)
+add_executable(gitupdate_test ${Sources})
+target_include_directories(gitupdate_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+target_link_libraries(gitupdate_test PUBLIC gtest_main)
 
 # Add tests
 add_test(
-    NAME updaterTest
-    COMMAND updater_test
+    NAME gitupdateTest
+    COMMAND gitupdate_test
 )

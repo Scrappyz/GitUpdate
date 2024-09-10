@@ -13,7 +13,7 @@
     #include <libgen.h>
 #endif
 
-namespace updater {
+namespace gitupdate {
 
     #if defined(_WIN32)
         // Path to cURL. (Defaults "curl.exe")

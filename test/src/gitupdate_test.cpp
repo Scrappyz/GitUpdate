@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "updater.hpp"
+#include "gitupdate.hpp"
 #include "os.hpp"
 
 namespace path = os::path;
@@ -33,31 +33,31 @@ json readJsonFromFile(const std::string& file)
 
 TEST(getAPIUrl, git_extension)
 {
-    EXPECT_EQ(updater::getAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
+    EXPECT_EQ(gitupdate::getAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
 }
 
 TEST(getAPIUrl, no_git_extesion)
 {
-    EXPECT_EQ(updater::getAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
+    EXPECT_EQ(gitupdate::getAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
 }
 
 TEST(getReleaseJson, working)
 {
-    json actual = updater::getReleaseJson(repo_url, "v1.0.0");
+    json actual = gitupdate::getReleaseJson(repo_url, "v1.0.0");
 
     EXPECT_EQ(actual, readJsonFromFile(path::joinPath(resource_path, "v1_0_0.json")));
 }
 
 TEST(getReleaseJson, failure)
 {
-    json actual = updater::getReleaseJson(repo_url, "v0.0.0");
+    json actual = gitupdate::getReleaseJson(repo_url, "v0.0.0");
 
     EXPECT_EQ(actual, json());
 }
 
 TEST(getTagListJson, working)
 {
-    json actual = updater::getTagListJson(repo_url);
+    json actual = gitupdate::getTagListJson(repo_url);
 
     EXPECT_EQ(actual, readJsonFromFile(path::joinPath(resource_path, "tags.json")));
 }
@@ -68,10 +68,10 @@ TEST(downloadAsset, working)
         path::createDirectory(temp_path);
     }
 
-    json j = updater::getLatestReleaseJson(repo_url, true);
+    json j = gitupdate::getLatestReleaseJson(repo_url, true);
     std::string output_path = path::joinPath(temp_path, asset_name);
 
-    updater::downloadAsset(repo_url, j.at("tag_name"), asset_name, output_path);
+    gitupdate::downloadAsset(repo_url, j.at("tag_name"), asset_name, output_path);
 
     ASSERT_TRUE(path::exists(output_path));
 
