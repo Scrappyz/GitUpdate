@@ -28,7 +28,7 @@ namespace gitupdate {
         inline const std::string github_url = "https://github.com/";
 
         // URL to Github API.
-        inline const std::string github_api_url = "https://api.github.com/repos/";
+        inline const std::string github_api_url = "https://api.github.com/";
 
         bool execute(const std::string& command, std::string& output, const std::string& mode = "r");
         bool execute(const std::string& command, const std::string& mode = "r");
@@ -80,7 +80,7 @@ namespace gitupdate {
     */
     inline std::string getGithubAPIUrl(const std::string& repo_url)
     {
-        std::string result = _private_::github_api_url + repo_url.substr(19, repo_url.size() - 19);
+        std::string result = _private_::github_api_url + "repos/" + repo_url.substr(19, repo_url.size() - 19);
         return result;
     }
 
@@ -93,7 +93,7 @@ namespace gitupdate {
     */
     inline std::string getGithubAPIUrl(const std::string& user_name, const std::string& repo_name)
     {
-        std::string result = _private_::github_api_url + user_name + "/" + repo_name;
+        std::string result = _private_::github_api_url + "repos/" + user_name + "/" + repo_name;
         return result;
     }
     
