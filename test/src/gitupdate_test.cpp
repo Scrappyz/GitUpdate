@@ -31,14 +31,14 @@ json readJsonFromFile(const std::string& file)
     return j;
 }
 
-TEST(getAPIUrl, git_extension)
+TEST(getGithubAPIUrl, git_extension)
 {
-    EXPECT_EQ(gitupdate::getAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
+    EXPECT_EQ(gitupdate::getGithubAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
 }
 
-TEST(getAPIUrl, no_git_extesion)
+TEST(getGithubAPIUrl, no_git_extesion)
 {
-    EXPECT_EQ(gitupdate::getAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
+    EXPECT_EQ(gitupdate::getGithubAPIUrl(repo_url), "https://api.github.com/repos/Scrappyz/Test-Updater");
 }
 
 TEST(getReleaseJson, working)
